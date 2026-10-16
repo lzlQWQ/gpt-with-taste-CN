@@ -17,7 +17,10 @@ async function exists(file){return fs.access(file).then(()=>true,()=>false);}
 async function fixture(t){
   await fs.mkdir(scratch,{recursive:true});const dir=await fs.mkdtemp(path.join(scratch,'case-'));t.after(()=>fs.rm(dir,{recursive:true,force:true}));
   const root=path.join(dir,'clone'),home=path.join(dir,'Codex Home');await fs.mkdir(home,{recursive:true});
-  for(const [name,text]of Object.entries({main:'FIXTURE MAIN — no behavioral claim',sub:'FIXTURE SUB','user-steer':'FIXTURE USER STEER','sub-steer':'FIXTURE SUB STEER','agent-steer':'FIXTURE AGENT STEER'}))await put(path.join(root,`prompts/${name}.md`),text+'\n');
+  for(const [name,text]of Object.entries({main:'FIXTURE MAIN — no behavioral claim',sub:'FIXTURE SUB','user-steer':'FIXTURE USER STEER','sub-steer':'FIXTURE SUB STEER','agent-steer':'FIXTURE AGENT STEER'})){
+    await put(path.join(root,`prompts/${name}.zh-CN.md`),text+'\n');
+    await put(path.join(root,`prompts/${name}.md`),text+'\n');
+  }
   for(const file of ['hooks/steer.mjs','hooks/local-tools.mjs','plugin/plugin.json','plugin/marketplace.json'])await put(path.join(root,file),await fs.readFile(path.join(repo,file)));
   const state={market:null,plugin:null},calls=[];
   const api={
@@ -34,9 +37,9 @@ const original='\uFEFF# local config\r\nmodel = "existing-gpt"\r\nmodel_reasonin
 test('prompt-only preserves all other bytes and hooks; no Codex prerequisite; original baseline survives updates',async t=>{
   const {root,home,call,calls}=await fixture(t);await put(path.join(home,'config.toml'),original);await put(path.join(home,'hooks.json'),'INVALID USER HOOK FILE');
   await call('--dry-run');assert.equal(await exists(receipt(root)),false);await call();
-  assert.equal(await fs.readFile(path.join(home,'config.toml'),'utf8'),setInstructions(original,path.join(home,'prompts/gpt-with-taste/main.md')));
+  assert.equal(await fs.readFile(path.join(home,'config.toml'),'utf8'),setInstructions(original,path.join(home,'prompts/gpt-with-taste/main.zh-CN.md')));
   const baseline=await fs.readFile(receipt(root),'utf8');assert.equal(baseline.includes('fixture-secret'),false);await call();assert.equal(await fs.readFile(receipt(root),'utf8'),baseline);
-  await put(path.join(root,'prompts/main.md'),'UPDATED');await call();await fs.appendFile(path.join(home,'config.toml'),'[analytics]\r\nenabled = false\r\n');await call('--check');await call('--restore');
+  await put(path.join(root,'prompts/main.zh-CN.md'),'UPDATED');await call();await fs.appendFile(path.join(home,'config.toml'),'[analytics]\r\nenabled = false\r\n');await call('--check');await call('--restore');
   assert.equal(await fs.readFile(path.join(home,'config.toml'),'utf8'),original+'[analytics]\r\nenabled = false\r\n');assert.equal(await fs.readFile(path.join(home,'hooks.json'),'utf8'),'INVALID USER HOOK FILE');assert.deepEqual(calls,[]);
 });
 for (const newline of ['\n', '\r\n']) test(`EOF instruction line accepts an unrelated ${JSON.stringify(newline)} append and restores safely`, async t => {
@@ -49,7 +52,7 @@ for (const newline of ['\n', '\r\n']) test(`EOF instruction line accepts an unre
   await call('--check');
   await call();
   const installed = await fs.readFile(config, 'utf8');
-  await put(config, installed.replace('/main.md', '/user-choice.md'));
+  await put(config, installed.replace('/main.zh-CN.md', '/user-choice.md'));
   await assert.rejects(call('--check'), /config key has drifted/);
   await assert.rejects(call('--restore'), /config key has drifted/);
   await put(config, installed);
@@ -66,11 +69,11 @@ test('EOF instruction line restores without adding a final newline when nothing 
   assert.equal(await fs.readFile(config, 'utf8'), before);
 });
 test('unknown managed bytes require explicit replacement and restore exactly',async t=>{
-  const {home,root,call}=await fixture(t);const file=path.join(home,'prompts/gpt-with-taste/main.md'),old=Buffer.from([0,1,255,13,10]);await put(file,old);
+  const {home,root,call}=await fixture(t);const file=path.join(home,'prompts/gpt-with-taste/main.zh-CN.md'),old=Buffer.from([0,1,255,13,10]);await put(file,old);
   await assert.rejects(call(),/Unknown managed target/);assert.equal(await exists(receipt(root)),false);await call('--replace-managed');await call('--restore');assert.deepEqual(await fs.readFile(file),old);assert.equal(await exists(path.join(home,'config.toml')),false);
 });
 test('managed prompt/config drift stops recovery before changing state',async t=>{
-  const {home,root,call}=await fixture(t);await call();const file=path.join(home,'prompts/gpt-with-taste/main.md'),installed=await fs.readFile(file);await put(file,'USER EDIT');const before=await fs.readFile(receipt(root));await assert.rejects(call('--replace-managed'),/drifted/);await assert.rejects(call('--restore'),/drifted/);assert.deepEqual(await fs.readFile(receipt(root)),before);
+  const {home,root,call}=await fixture(t);await call();const file=path.join(home,'prompts/gpt-with-taste/main.zh-CN.md'),installed=await fs.readFile(file);await put(file,'USER EDIT');const before=await fs.readFile(receipt(root));await assert.rejects(call('--replace-managed'),/drifted/);await assert.rejects(call('--restore'),/drifted/);assert.deepEqual(await fs.readFile(receipt(root)),before);
   await put(file,installed);await put(path.join(home,'config.toml'),'model_instructions_file = "other.md"\n');await assert.rejects(call('--restore'),/config key has drifted/);
 });
 test('plugin bundle installs three routes, leaves all user hooks untouched, updates and restores',async t=>{
@@ -79,12 +82,12 @@ test('plugin bundle installs three routes, leaves all user hooks untouched, upda
   const data=JSON.parse(await fs.readFile(receipt(root)));const hooks=JSON.parse(await fs.readFile(path.join(data.plugin.cacheRoot,'hooks/hooks.json')));
   assert.deepEqual(Object.keys(hooks.hooks),['UserPromptSubmit','SubagentStart','PostToolUse']);assert.equal(hooks.hooks.PostToolUse[0].matcher,WAIT_TOOL_MATCHER);assert.equal(hooks.hooks.UserPromptSubmit[0].hooks[0].timeout,15);assert.match(hooks.hooks.UserPromptSubmit[0].hooks[0].command,process.platform==='win32'?/\$env:PLUGIN_ROOT/:/\$\{PLUGIN_ROOT\}/);assert.match(hooks.hooks.UserPromptSubmit[0].hooks[0].command,/--route user$/);assert.match(hooks.hooks.SubagentStart[0].hooks[0].command,/--route sub$/);assert.match(hooks.hooks.PostToolUse[0].hooks[0].command,/--route agent$/);
   const baseline=await fs.readFile(receipt(root));await call('--hooks');assert.deepEqual(await fs.readFile(receipt(root)),baseline);assert.equal(calls.filter(name=>name==='install').length,1);
-  await put(path.join(root,'prompts/user-steer.md'),'UPDATED STEER');await call('--hooks');const updated=JSON.parse(await fs.readFile(receipt(root)));assert.equal(await fs.readFile(path.join(updated.plugin.cacheRoot,'prompts/user-steer.md'),'utf8'),'UPDATED STEER');assert.equal(updated.config.before,data.config.before);
+  await put(path.join(root,'prompts/user-steer.zh-CN.md'),'UPDATED STEER');await call('--hooks');const updated=JSON.parse(await fs.readFile(receipt(root)));assert.equal(await fs.readFile(path.join(updated.plugin.cacheRoot,'prompts/user-steer.zh-CN.md'),'utf8'),'UPDATED STEER');assert.equal(updated.config.before,data.config.before);
   await fs.appendFile(path.join(home,'config.toml'),'[analytics]\r\nenabled = false\r\n');await call('--check');await call('--restore');assert.equal(state.market,null);assert.equal(state.plugin,null);assert.equal(await fs.readFile(path.join(home,'config.toml'),'utf8'),original+'[analytics]\r\nenabled = false\r\n');assert.equal(await fs.readFile(path.join(home,'hooks.json'),'utf8'),'USER HOOK JSON IS NOT OURS');assert.equal(await exists(path.join(home,MARKET_ROOT,'plugins/gpt-with-taste/hooks/steer.mjs')),false);
 });
 test('plugin collisions and cache drift fail closed; prompt-only updates do not inspect plugin',async t=>{
   const {root,home,call,state,calls}=await fixture(t);state.market={name:MARKET,root:'/other'};await assert.rejects(call('--hooks'),/not owned/);assert.equal(await exists(receipt(root)),false);state.market=null;await call('--hooks');const data=JSON.parse(await fs.readFile(receipt(root)));await put(path.join(data.plugin.cacheRoot,'hooks/steer.mjs'),'USER CACHE EDIT');const before=await fs.readFile(receipt(root));await assert.rejects(call('--restore'),/file has drifted/);assert.deepEqual(await fs.readFile(receipt(root)),before);assert.equal(state.plugin.enabled,true);
-  calls.length=0;await put(path.join(root,'prompts/main.md'),'NEW MAIN');await call();assert.deepEqual(calls,[]);await assert.rejects(call('--check'),/file has drifted/);
+  calls.length=0;await put(path.join(root,'prompts/main.zh-CN.md'),'NEW MAIN');await call();assert.deepEqual(calls,[]);await assert.rejects(call('--check'),/file has drifted/);
 });
 async function legacy(f,single=true,matchingBaseline=false){
   const {root,home,call}=f;await put(path.join(home,'config.toml'),original);await call();const data=JSON.parse(await fs.readFile(receipt(root)));const cmd='node "owned-legacy-steer.mjs"',peer={hooks:[{type:'command',command:'other-sol-recipe-steer.mjs'}]};
@@ -114,7 +117,7 @@ test('safe TOML insertion preserves multiline unrelated content and rejects inva
 });
 
 test('interrupted plugin refresh accepts previous and new cache bytes while restoring the original baseline',async t=>{
-  const f=await fixture(t);await f.call('--hooks');const before=JSON.parse(await fs.readFile(receipt(f.root)));await put(path.join(f.root,'prompts/user-steer.md'),'NEW STEER');
+  const f=await fixture(t);await f.call('--hooks');const before=JSON.parse(await fs.readFile(receipt(f.root)));await put(path.join(f.root,'prompts/user-steer.zh-CN.md'),'NEW STEER');
   const install=f.api.install;f.api.install=async root=>{await install(root);throw new Error('REFRESH FAILED AFTER CLI COPY');};
   await assert.rejects(f.call('--hooks'),/REFRESH FAILED/);await f.call('--restore');assert.equal(f.state.plugin,null);assert.equal(f.state.market,null);assert.equal(await exists(path.join(f.home,before.files[0].path)),false);
 });
@@ -158,7 +161,7 @@ test('manual update check is read-only, separates checkout and installed prompts
   await f.call('--check-updates');assert.equal(await exists(receipt(f.root)),false);assert.equal(await exists(path.join(f.home,'config.toml')),false);
   await f.call('--hooks');const baseline=JSON.parse(await fs.readFile(receipt(f.root)));
   assert.deepEqual(baseline.source,{prompts:sourceA,hooks:sourceA});
-  selected=sourceB;await put(path.join(f.root,'prompts/main.md'),'NEW PROMPT');
+  selected=sourceB;await put(path.join(f.root,'prompts/main.zh-CN.md'),'NEW PROMPT');
   const before=await fs.readFile(receipt(f.root)),config=await fs.readFile(path.join(f.home,'config.toml'));
   await f.call('--check-updates');assert.deepEqual(seen,{Checkout:sourceB,'Installed prompts':sourceA,'Installed Hooks':sourceA});
   assert.deepEqual(await fs.readFile(receipt(f.root)),before);assert.deepEqual(await fs.readFile(path.join(f.home,'config.toml')),config);
@@ -171,7 +174,7 @@ test('manual update check is read-only, separates checkout and installed prompts
 test('failed refresh retains installed provenance and original recovery baseline; first failed install records no source',async t=>{
   const f=await fixture(t);let selected=sourceA;f.services.sourceIdentity=async()=>selected;
   await f.call('--hooks');const baseline=JSON.parse(await fs.readFile(receipt(f.root)));
-  selected=sourceB;await put(path.join(f.root,'prompts/main.md'),'NEW MAIN');const install=f.api.install;
+  selected=sourceB;await put(path.join(f.root,'prompts/main.zh-CN.md'),'NEW MAIN');const install=f.api.install;
   f.api.install=async root=>{await install(root);throw new Error('PROVENANCE FAILURE');};
   await assert.rejects(f.call('--hooks'),/PROVENANCE FAILURE/);
   const pending=JSON.parse(await fs.readFile(receipt(f.root)));assert.equal(pending.status,'applying');assert.deepEqual(pending.source,baseline.source);assert.equal(pending.config.before,baseline.config.before);
@@ -190,7 +193,7 @@ test('old receipts have unknown provenance and still restore; installed drift is
   const legacy=JSON.parse(await fs.readFile(receipt(f.root)));delete legacy.source;await put(receipt(f.root),JSON.stringify(legacy));
   let seen;f.services.checkUpdates=async sources=>{seen=structuredClone(sources);return {status:'unavailable',reason:'offline'};};
   await f.call('--check-updates');assert.equal(seen['Installed prompts'],undefined);await f.call('--restore');
-  await f.call();await put(path.join(f.home,'prompts/gpt-with-taste/main.md'),'USER EDIT');await f.call('--check-updates');assert.equal(seen['Installed prompts'].dirty,true);
+  await f.call();await put(path.join(f.home,'prompts/gpt-with-taste/main.zh-CN.md'),'USER EDIT');await f.call('--check-updates');assert.equal(seen['Installed prompts'].dirty,true);
 });
 
 test('manual update check defaults to saved home without changing install or restore defaults',async t=>{

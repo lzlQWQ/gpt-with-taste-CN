@@ -8,7 +8,7 @@ import {fallbackHook, handleHook, evaluateHook} from './steer.mjs';
 import {normalizeLocalTool, WAIT_TOOL_MATCHER} from './local-tools.mjs';
 function fixture(t) {
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'gpt-with-taste-hook-'));
-  for (const source of ['user', 'sub', 'agent']) fs.writeFileSync(path.join(dir, `${source}-steer.md`), `${source.toUpperCase()} WHOLE SOURCE\n`);
+  for (const source of ['user', 'sub', 'agent']) fs.writeFileSync(path.join(dir, `${source}-steer.zh-CN.md`), `${source.toUpperCase()} WHOLE SOURCE\n`);
   t.after(() => fs.rmSync(dir, {recursive: true}));
   return dir;
 }
@@ -52,7 +52,7 @@ test('malformed event and missing source fail visibly', t => {
   assert.throws(() => handleHook(null), /event object/);
   assert.throws(() => fallbackHook('unknown'), /Invalid --route fallback/);
   const dir = fixture(t);
-  fs.unlinkSync(path.join(dir, 'sub-steer.md'));
+  fs.unlinkSync(path.join(dir, 'sub-steer.zh-CN.md'));
   assert.throws(() => handleHook({hook_event_name: 'SubagentStart'}, dir), /ENOENT/);
 });
 
@@ -146,7 +146,7 @@ test('event outcomes distinguish unsupported, incomplete, deduplicated and missi
   assert.equal(evaluateHook({...identity,hook_event_name:'SubagentStart'},dir,data).reason,'INJECTED');
   assert.equal(evaluateHook({...identity,hook_event_name:'UserPromptSubmit'},dir,data).reason,'DEDUPLICATED');
   assert.equal(evaluateHook({...identity,turn_id:'later',hook_event_name:'UserPromptSubmit'},dir,data).reason,'INJECTED');
-  fs.unlinkSync(path.join(dir,'user-steer.md'));
+  fs.unlinkSync(path.join(dir,'user-steer.zh-CN.md'));
   assert.throws(()=>evaluateHook({hook_event_name:'UserPromptSubmit'},dir),{code:'MISSING_SOURCE'});
 });
 

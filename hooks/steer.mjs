@@ -80,7 +80,7 @@ function recordChild(file, state, previous = file) {
 }
 export function selectRoute(event) { return classify(event).route; }
 function routeOutput(route, hookEventName, prompts) {
-  const file = typeof prompts === 'object' ? prompts[route] : path.join(prompts, `${route}-steer.md`);
+  const file = typeof prompts === 'object' ? prompts[route] : path.join(prompts, `${route}-steer.zh-CN.md`);
   let text;
   try { text = fs.readFileSync(file, 'utf8').trim(); }
   catch (error) { fail('MISSING_SOURCE', `Cannot read the ${route} Steer at ${file}: ${error.message}`); }

@@ -9,9 +9,9 @@ import {pluginBundle, codexPlugin, assertPluginInventory, MARKET_ROOT, ID} from 
 import {sourceIdentity, checkUpdates, formatUpdateReport} from '../src/update-check.mjs';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const RECEIPT = '.gpt-with-taste/install-receipt.json';
-const PROMPTS = new Map([['prompts/gpt-with-taste/main.md','prompts/main.md'],['prompts/gpt-with-taste/sub.md','prompts/sub.md']]);
-const LEGACY_FILES = ['gpt-with-taste/hooks/steer.mjs',...['user','sub','agent'].map(name=>`gpt-with-taste/prompts/${name}-steer.md`)];
-const BUNDLE_PATHS = ['.agents/plugins/marketplace.json','plugins/gpt-with-taste/.codex-plugin/plugin.json','plugins/gpt-with-taste/hooks/steer.mjs','plugins/gpt-with-taste/hooks/local-tools.mjs','plugins/gpt-with-taste/hooks/hooks.json',...['user','sub','agent'].map(name=>`plugins/gpt-with-taste/prompts/${name}-steer.md`)];
+const PROMPTS = new Map([['prompts/gpt-with-taste/main.zh-CN.md','prompts/main.zh-CN.md'],['prompts/gpt-with-taste/sub.zh-CN.md','prompts/sub.zh-CN.md']]);
+const LEGACY_FILES = ['prompts/gpt-with-taste/main.md','prompts/gpt-with-taste/sub.md','gpt-with-taste/hooks/steer.mjs',...['user','sub','agent'].map(name=>`gpt-with-taste/prompts/${name}-steer.md`),...['user','sub','agent'].map(name=>`plugins/gpt-with-taste/prompts/${name}-steer.md`)];
+const BUNDLE_PATHS = ['.agents/plugins/marketplace.json','plugins/gpt-with-taste/.codex-plugin/plugin.json','plugins/gpt-with-taste/hooks/steer.mjs','plugins/gpt-with-taste/hooks/local-tools.mjs','plugins/gpt-with-taste/hooks/hooks.json',...['user','sub','agent'].map(name=>`plugins/gpt-with-taste/prompts/${name}-steer.zh-CN.md`)];
 const HELP = `GPT with Taste — Node.js 22+
   node scripts/install.mjs [--home ABSOLUTE_CODEX_HOME] [--hooks] [--dry-run]
   node scripts/install.mjs --check [--home ABSOLUTE_CODEX_HOME]

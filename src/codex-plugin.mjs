@@ -16,7 +16,7 @@ export async function pluginBundle(root) {
     ['plugins/gpt-with-taste/hooks/steer.mjs', 'hooks/steer.mjs'],
     ['plugins/gpt-with-taste/hooks/local-tools.mjs', 'hooks/local-tools.mjs'],
     ...['user', 'sub', 'agent'].map(name => [
-      `plugins/gpt-with-taste/prompts/${name}-steer.md`, `prompts/${name}-steer.md`,
+      `plugins/gpt-with-taste/prompts/${name}-steer.zh-CN.md`, `prompts/${name}-steer.zh-CN.md`,
     ]),
   ];
   for (const [target, source] of sources) {

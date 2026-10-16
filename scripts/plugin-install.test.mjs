@@ -16,7 +16,7 @@ test('real Codex CLI installs, updates, deduplicates legacy, checks and restores
     await fs.rm(base,{recursive:true,force:true});
   });
   const root=path.join(base,'clone'),home=path.join(base,'Codex Home');await fs.mkdir(home,{recursive:true});
-  for(const file of ['prompts/main.md','prompts/sub.md','prompts/user-steer.md','prompts/sub-steer.md','prompts/agent-steer.md','hooks/steer.mjs','hooks/local-tools.mjs','plugin/plugin.json','plugin/marketplace.json']){const target=path.join(root,file);await fs.mkdir(path.dirname(target),{recursive:true});await fs.copyFile(path.join(repo,file),target);}
+  for(const file of ['prompts/main.zh-CN.md','prompts/sub.zh-CN.md','prompts/user-steer.zh-CN.md','prompts/sub-steer.zh-CN.md','prompts/agent-steer.zh-CN.md','hooks/steer.mjs','hooks/local-tools.mjs','plugin/plugin.json','plugin/marketplace.json']){const target=path.join(root,file);await fs.mkdir(path.dirname(target),{recursive:true});await fs.copyFile(path.join(repo,file),target);}
   const config='# peer config\nfeatures.hooks = true\nmodel = "existing-gpt"\nmodel_reasoning_effort = "high"\nmodel_instructions_file = \'old/main.md\' # original';await fs.writeFile(path.join(home,'config.toml'),config);
   await fs.mkdir(path.join(home,'old'),{recursive:true});await fs.writeFile(path.join(home,'old/main.md'),'PREVIOUS INSTRUCTIONS\n');
   const call=(...args)=>run(['--home',home,'--codex',process.env.CODEX_EXECUTABLE,...args],root,{checkUpdates:async()=>({status:'unavailable',reason:'offline integration fixture'})});
@@ -27,7 +27,7 @@ test('real Codex CLI installs, updates, deduplicates legacy, checks and restores
   await call('--hooks','--dry-run');await call('--hooks');await call('--check');
   let data=JSON.parse(await fs.readFile(receiptFile));assert.deepEqual(JSON.parse(await fs.readFile(path.join(home,'hooks.json'))).hooks.UserPromptSubmit,[peer]);
   const baseline=await fs.readFile(receiptFile);await call('--hooks');assert.deepEqual(await fs.readFile(receiptFile),baseline);
-  await fs.writeFile(path.join(root,'prompts/user-steer.md'),'UPDATED OWNED SOURCE\n');await call('--hooks');data=JSON.parse(await fs.readFile(receiptFile));assert.equal(await fs.readFile(path.join(data.plugin.cacheRoot,'prompts/user-steer.md'),'utf8'),'UPDATED OWNED SOURCE\n');await call('--check');
+  await fs.writeFile(path.join(root,'prompts/user-steer.zh-CN.md'),'UPDATED OWNED SOURCE\n');await call('--hooks');data=JSON.parse(await fs.readFile(receiptFile));assert.equal(await fs.readFile(path.join(data.plugin.cacheRoot,'prompts/user-steer.zh-CN.md'),'utf8'),'UPDATED OWNED SOURCE\n');await call('--check');
   await fs.appendFile(path.join(home,'config.toml'),'\n[analytics]\nenabled = false\n');
   await call('--restore','--dry-run');await call('--restore');assert.deepEqual(await codexPlugin(home,process.env.CODEX_EXECUTABLE).inventory(),{market:null,plugin:null});
   const restored=await fs.readFile(path.join(home,'config.toml'),'utf8');assert.ok(restored.includes(config.trimEnd()));assert.match(restored,/\[analytics\]\nenabled = false/);assert.deepEqual(JSON.parse(await fs.readFile(path.join(home,'hooks.json'))).hooks.UserPromptSubmit,[peer]);
